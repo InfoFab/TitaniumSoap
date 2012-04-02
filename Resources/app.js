@@ -1,3 +1,4 @@
+Ti.include('soapclient.js');
 
 
 var url = "http://ifecc60.ose.com.tw:8000/sap/bc/srt/rfc/sap/z_web_ebiz_001/800/z_web_ebiz_001/z_web_ebiz_001";
@@ -13,11 +14,19 @@ var win = Titanium.UI.createWindow({
 });
 
 //approach one
-var buttonLeft = Ti.UI.createButton({ color:'black', title:'SAP', top:50, left:50, height:42, width:100 });
+var buttonLeft = Ti.UI.createButton({ color:'black', title:'Fixed', top:50, left:50, height:42, width:100 });
 
 win.add(buttonLeft);
 buttonLeft.addEventListener('click', function(e) {
   soapSAP(); 
+});
+
+//approach two
+var buttonLeft = Ti.UI.createButton({ color:'black', title:'SoupClient', top:50, right:50, height:42, width:100 });
+
+win.add(buttonLeft);
+buttonLeft.addEventListener('click', function(e) {
+  trySoapClient(); 
 });
 
 
@@ -63,4 +72,19 @@ function doUpdate(){
     Ti.API.info('Response from the server: ' + xhr.responseText);
 
   }
+}
+
+function trySoapClient(){
+
+	var pl = new SOAPClientParameters();
+	pl.add("IEbeln", 3000000005);
+	pl.add("ILifnr",5550);
+	SOAPClient.invoke(url, "HelloTo", pl, true, trySoapCliento_callBack);
+
+}
+
+function trySoapCliento_callBack(r){
+	// alert('Response from the server: ' + xhr.status);
+    Ti.API.info('trySoapCliento_callBack Response from the server: ' + r);
+
 }
