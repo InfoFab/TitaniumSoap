@@ -2,8 +2,11 @@ Ti.include('soapclient.js');
 
 
 var url = "http://ifecc60.ose.com.tw:8000/sap/bc/srt/rfc/sap/z_web_ebiz_001/800/z_web_ebiz_001/z_web_ebiz_001";
+          
 var username = 'demo1';
 var password = 'info5678';
+var authstr = 'Basic ' +Titanium.Utils.base64encode(username+':'+password);
+
 var xhr = Ti.Network.createHTTPClient();
 
 Titanium.UI.setBackgroundColor('#FFF');
@@ -36,10 +39,9 @@ win.open();
 //function.....	
 function soapSAP(){ 
 	//User and Password of SAP 
-	var authstr = 'Basic ' +Titanium.Utils.base64encode(username+':'+password);
 	Ti.API.info('authstr:'+authstr);
 //End Point
-	xhr.open('POST', url, false);
+	xhr.open('POST', url, true);
 //SOAP Message
 	var soapRequest=
   	"<?xml version=\"1.0\" encoding=\"utf-8\"?>" 
@@ -57,7 +59,7 @@ function soapSAP(){
 	//Important: Add Header  Authorization and SOAP Message
 	xhr.setRequestHeader('Content-Type','text/xml; charset=utf-8');
 	xhr.setRequestHeader('Authorization', authstr);
-	xhr.setRequestHeader('Content-Length', soapRequest.length); 
+	//xhr.setRequestHeader('Content-Length', soapRequest.length); 
 	xhr.send(soapRequest);
 	xhr.onreadystatechange=doUpdate();
 	return false;
@@ -77,9 +79,10 @@ function doUpdate(){
 function trySoapClient(){
 
 	var pl = new SOAPClientParameters();
+	var wsdlurl = 'http://ifecc60.ose.com.tw:8000/sap/bc/srt/wsdl/bndg_E172990212E127F1998600219B741ED8/wsdl11/allinone/ws_policy/document?sap-client=800';
 	pl.add("IEbeln", 3000000005);
 	pl.add("ILifnr",5550);
-	SOAPClient.invoke(url, "HelloTo", pl, true, trySoapCliento_callBack);
+	SOAPClient.invoke(wsdlurl, authstr, "urn:ZEbiz001", pl, true, trySoapCliento_callBack);
 
 }
 

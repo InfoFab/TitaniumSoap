@@ -53,27 +53,30 @@ function SOAPClientParameters()
 
 function SOAPClient() {}
 
-SOAPClient.invoke = function(url, method, parameters, async, callback)
+SOAPClient.invoke = function(url, authst, method, parameters, async, callback)
 {
 	if(async)
-		SOAPClient._loadWsdl(url, method, parameters, async, callback);
+		SOAPClient._loadWsdl(url, authst, method, parameters, async, callback);
 	else
-		return SOAPClient._loadWsdl(url, method, parameters, async, callback);
+		return SOAPClient._loadWsdl(url, authst, method, parameters, async, callback);
 }
 
 // private: wsdl cache
 SOAPClient_cacheWsdl = new Array();
 
 // private: invoke async
-SOAPClient._loadWsdl = function(url, method, parameters, async, callback)
+SOAPClient._loadWsdl = function(url, authst, method, parameters, async, callback)
 {
 	// load from cache?
 	var wsdl = SOAPClient_cacheWsdl[url];
 	if(wsdl + "" != "" && wsdl + "" != "undefined")
 		return SOAPClient._sendSoapRequest(url, method, parameters, async, callback, wsdl);
 	// get wsdl
-	var xmlHttp = SOAPClient._getXmlHttp();
-	xmlHttp.open("GET", url + "?wsdl", async);
+	var xmlHttp = SOAPClient._getHTTPClient();
+	xmlHttp.open("GET", url, async);
+	xmlHttp.setRequestHeader('Content-Type','text/xml; charset=utf-8');
+	xmlHttp.setRequestHeader('Authorization', authstr);
+	
 	if(async) 
 	{
 		xmlHttp.onreadystatechange = function() 
@@ -88,31 +91,39 @@ SOAPClient._loadWsdl = function(url, method, parameters, async, callback)
 }
 SOAPClient._onLoadWsdl = function(url, method, parameters, async, callback, req)
 {
+	Ti.API.info('Response wsdl from the server: ' + req.responseText)
+
 	var wsdl = req.responseXML;
 	SOAPClient_cacheWsdl[url] = wsdl;	// save a copy in cache
+	
 	return SOAPClient._sendSoapRequest(url, method, parameters, async, callback, wsdl);
 }
 SOAPClient._sendSoapRequest = function(url, method, parameters, async, callback, wsdl)
 {
+	
+	var requestUrl = wsdl.getElementsByTagName("soap:address").item(0).attributes.getNamedItem("location").value;
+	Ti.API.info('requestUrl: ' + requestUrl);
 	// get namespace
 	var ns = (wsdl.documentElement.attributes["targetNamespace"] + "" == "undefined") ? wsdl.documentElement.attributes.getNamedItem("targetNamespace").nodeValue : wsdl.documentElement.attributes["targetNamespace"].value;
 	// build SOAP request
-	var sr = 
-				"<?xml version=\"1.0\" encoding=\"utf-8\"?>" +
-				"<soap:Envelope " +
-				"xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" " +
-				"xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" " +
-				"xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\">" +
-				"<soap:Body>" +
-				"<" + method + " xmlns=\"" + ns + "\">" +
-				parameters.toXml() +
-				"</" + method + "></soap:Body></soap:Envelope>";
+	var soapRequest = 
+				"<?xml version=\"1.0\" encoding=\"utf-8\"?>"
+				+"<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:urn=\"urn:sap-com:document:sap:soap:functions:mc-style\">"
+  				+"<soapenv:Header/>"
+				+"<soapenv:Body>"
+				+"<" + method +">" // " xmlns=\"" + ns + "\">" +
+				+parameters.toXml() 
+				+"</" + method + ">"
+				+"</soapenv:Body>"
+				+"</soapenv:Envelope>";
+	Ti.API.info('_sendSoapRequest: ' + soapRequest)
+	Ti.API.info('authstr:'+authstr);		
 	// send request
-	var xmlHttp = SOAPClient._getXmlHttp();
-	xmlHttp.open("POST", url, async);
-	var soapaction = ((ns.lastIndexOf("/") != ns.length - 1) ? ns + "/" : ns) + method;
-	xmlHttp.setRequestHeader("SOAPAction", soapaction);
-	xmlHttp.setRequestHeader("Content-Type", "text/xml; charset=utf-8");
+	var xmlHttp = SOAPClient._getHTTPClient();
+	xmlHttp.open("POST", requestUrl, async);
+	xmlHttp.setRequestHeader('Content-Type','text/xml; charset=utf-8');
+	xmlHttp.setRequestHeader('Authorization', authstr);
+	
 	if(async) 
 	{
 		xmlHttp.onreadystatechange = function() 
@@ -121,21 +132,24 @@ SOAPClient._sendSoapRequest = function(url, method, parameters, async, callback,
 				SOAPClient._onSendSoapRequest(method, async, callback, wsdl, xmlHttp);
 		}
 	}
-	xmlHttp.send(sr);
+	
+	xmlHttp.send(soapRequest);
 	if (!async)
 		return SOAPClient._onSendSoapRequest(method, async, callback, wsdl, xmlHttp);
 }
 SOAPClient._onSendSoapRequest = function(method, async, callback, wsdl, req)
 {
 	var o = null;
-	var nd = SOAPClient._getElementsByTagName(req.responseXML, method + "Result");
+	Ti.API.info('_onSendSoapRequest Response from the server: ' + req.responseText);
+
+	var nd = SOAPClient._getElementsByTagName(req.responseXML, method + "Response");
 	if(nd.length == 0)
 	{
 		if(req.responseXML.getElementsByTagName("faultcode").length > 0)
 			throw new Error(500, req.responseXML.getElementsByTagName("faultstring")[0].childNodes[0].nodeValue);
 	}
 	else
-		o = SOAPClient._soapresult2object(nd[0], wsdl);
+		o = SOAPClient._soapresult2object(nd.item(0), wsdl);
 	if(callback)
 		callback(o, req.responseXML);
 	if(!async)
@@ -245,35 +259,15 @@ SOAPClient._getTypeFromWsdl = function(elementname, wsdl)
 	}
 	return "";
 }
-// private: xmlhttp factory
-SOAPClient._getXmlHttp = function() 
+// private: xmlhttp factory => modified to use HTTPClient
+SOAPClient._getHTTPClient = function() 
 {
-	try
-	{
-		if(window.XMLHttpRequest) 
-		{
-			var req = new XMLHttpRequest();
-			// some versions of Moz do not support the readyState property and the onreadystate event so we patch it!
-			if(req.readyState == null) 
-			{
-				req.readyState = 1;
-				req.addEventListener("load", 
-									function() 
-									{
-										req.readyState = 4;
-										if(typeof req.onreadystatechange == "function")
-											req.onreadystatechange();
-									},
-									false);
-			}
-			return req;
-		}
-		if(window.ActiveXObject) 
-			return new ActiveXObject(SOAPClient._getXmlHttpProgID());
-	}
-	catch (ex) {}
-	throw new Error("Your browser does not support XmlHttp objects");
+	var req = Ti.Network.createHTTPClient();
+	return req;
+
 }
+
+// no use in Titanium
 SOAPClient._getXmlHttpProgID = function()
 {
 	if(SOAPClient._getXmlHttpProgID.progid)
