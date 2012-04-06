@@ -65,7 +65,7 @@ function soapSAP(){
 	return false;
 }
 function doUpdate(){
-  debugger;
+ // debugger;
 
   if(xhr.readyState==4)
   {

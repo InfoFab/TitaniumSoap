@@ -56,9 +56,15 @@ function SOAPClient() {}
 SOAPClient.invoke = function(url, authst, method, parameters, async, callback)
 {
 	if(async)
+	{
+		
 		SOAPClient._loadWsdl(url, authst, method, parameters, async, callback);
-	else
+	
+	}else
+	{
+		
 		return SOAPClient._loadWsdl(url, authst, method, parameters, async, callback);
+	}
 }
 
 // private: wsdl cache
@@ -67,27 +73,36 @@ SOAPClient_cacheWsdl = new Array();
 // private: invoke async
 SOAPClient._loadWsdl = function(url, authst, method, parameters, async, callback)
 {
+	Ti.API.info('SOAPClient._loadWsdl ===========================');
+	
 	// load from cache?
 	var wsdl = SOAPClient_cacheWsdl[url];
 	if(wsdl + "" != "" && wsdl + "" != "undefined")
 		return SOAPClient._sendSoapRequest(url, method, parameters, async, callback, wsdl);
 	// get wsdl
-	var xmlHttp = SOAPClient._getHTTPClient();
-	xmlHttp.open("GET", url, async);
-	xmlHttp.setRequestHeader('Content-Type','text/xml; charset=utf-8');
-	xmlHttp.setRequestHeader('Authorization', authstr);
+	var wsdlHttpClient = Ti.Network.createHTTPClient();
+	wsdlHttpClient.open("GET", url, async);
+	wsdlHttpClient.setRequestHeader('Content-Type','text/xml; charset=utf-8');
+	wsdlHttpClient.setRequestHeader('Authorization', authstr);
 	
 	if(async) 
 	{
-		xmlHttp.onreadystatechange = function() 
+		wsdlHttpClient.onreadystatechange = function() 
 		{
-			if(xmlHttp.readyState == 4)
-				SOAPClient._onLoadWsdl(url, method, parameters, async, callback, xmlHttp);
+			if(wsdlHttpClient.readyState == 4 && wsdlHttpClient.status == 200)
+			{
+				Ti.API.info('SOAPClient._onLoadWsdl ===========================');
+	
+				SOAPClient._onLoadWsdl(url, method, parameters, async, callback, wsdlHttpClient);
+			}
 		}
 	}
-	xmlHttp.send(null);
+	wsdlHttpClient.send(null);
+	
 	if (!async)
-		return SOAPClient._onLoadWsdl(url, method, parameters, async, callback, xmlHttp);
+	{	
+		return SOAPClient._onLoadWsdl(url, method, parameters, async, callback, wsdlHttpClient);
+	}
 }
 SOAPClient._onLoadWsdl = function(url, method, parameters, async, callback, req)
 {
@@ -119,23 +134,42 @@ SOAPClient._sendSoapRequest = function(url, method, parameters, async, callback,
 	Ti.API.info('_sendSoapRequest: ' + soapRequest)
 	Ti.API.info('authstr:'+authstr);		
 	// send request
-	var xmlHttp = SOAPClient._getHTTPClient();
-	xmlHttp.open("POST", requestUrl, async);
-	xmlHttp.setRequestHeader('Content-Type','text/xml; charset=utf-8');
-	xmlHttp.setRequestHeader('Authorization', authstr);
+	var requestHttpClinet = Ti.Network.createHTTPClient({ 
+		onload : function(e) {
+			Ti.API.info("Received text: " + this.responseText);
+         	alert('success');
+         	if(async) 
+			{
+				Ti.API.info('SOAPClient._onSendSoapRequest===========');
+	
+				SOAPClient._onSendSoapRequest(method, async, callback, wsdl, requestHttpClinet);
+			}
+     	},
+     });
+	requestHttpClinet.open("POST", requestUrl, async);
+	requestHttpClinet.setRequestHeader('Content-Type','text/xml; charset=utf-8');
+	requestHttpClinet.setRequestHeader('Authorization', authstr);
 	
 	if(async) 
 	{
-		xmlHttp.onreadystatechange = function() 
+		requestHttpClinet.onreadystatechange = function(e) 
 		{
-			if(xmlHttp.readyState == 4)
-				SOAPClient._onSendSoapRequest(method, async, callback, wsdl, xmlHttp);
+			if(requestHttpClinet.readyState == 4 && requestHttpClinet.status == 200)
+			{	
+				Ti.API.info('requestHttpClinet.readyState == 4 && requestHttpClinet.status == 200');
+	
+	//			SOAPClient._onSendSoapRequest(method, async, callback, wsdl, requestHttpClinet);
+			}
 		}
 	}
 	
-	xmlHttp.send(soapRequest);
+	requestHttpClinet.send(soapRequest);
+	
 	if (!async)
-		return SOAPClient._onSendSoapRequest(method, async, callback, wsdl, xmlHttp);
+	{
+		Ti.API.info('!async========================= call _onSendSoapRequest');		
+		return SOAPClient._onSendSoapRequest(method, async, callback, wsdl, requestHttpClinet);
+	}
 }
 SOAPClient._onSendSoapRequest = function(method, async, callback, wsdl, req)
 {
