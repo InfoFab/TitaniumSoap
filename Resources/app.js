@@ -1,7 +1,6 @@
 Ti.include('soapclient.js');
 
 
-var url = "http://ifecc60.ose.com.tw:8000/sap/bc/srt/rfc/sap/z_web_ebiz_001/800/z_web_ebiz_001/z_web_ebiz_001";
           
 var username = 'demo1';
 var password = 'info5678';
@@ -16,8 +15,35 @@ var win = Titanium.UI.createWindow({
     backgroundImage: 'img/background.png'
 });
 
+var tf1 = Titanium.UI.createTextField({
+    color:'#336699',
+    height:35,
+    top:10,
+    left:10,
+    width:250,
+    borderStyle:Titanium.UI.INPUT_BORDERSTYLE_ROUNDED
+});
+
+tf1.addEventListener('focus',function(e){
+});
+
+var picker = Ti.UI.createPicker({
+  top:50
+});
+ 
+var data = [];
+data[0]=Ti.UI.createPickerRow({title:'範例 urn:ZEbiz001'});
+data[1]=Ti.UI.createPickerRow({title:'訂單轉進貨單 n0:ZMmShipdoc'});
+
+picker.add(data);
+picker.selectionIndicator = true;
+ 
+win.add(picker);
+
+picker.setSelectedRow(0, 2, false);
+
 //approach one
-var buttonLeft = Ti.UI.createButton({ color:'black', title:'Fixed', top:50, left:50, height:42, width:100 });
+var buttonLeft = Ti.UI.createButton({ color:'black', title:'Fixed', top:100, left:50, height:42, width:100 });
 
 win.add(buttonLeft);
 buttonLeft.addEventListener('click', function(e) {
@@ -25,7 +51,7 @@ buttonLeft.addEventListener('click', function(e) {
 });
 
 //approach two
-var buttonLeft = Ti.UI.createButton({ color:'black', title:'SoupClient', top:50, right:50, height:42, width:100 });
+var buttonLeft = Ti.UI.createButton({ color:'black', title:'WSDL', top:100, right:50, height:42, width:100 });
 
 win.add(buttonLeft);
 buttonLeft.addEventListener('click', function(e) {
@@ -37,11 +63,14 @@ buttonLeft.addEventListener('click', function(e) {
 win.open();
 
 //function.....	
-function soapSAP(){ 
+function soapSAP(){
+
+	var soap_url = "http://ifecc60.ose.com.tw:8000/sap/bc/srt/rfc/sap/z_web_ebiz_001/800/z_web_ebiz_001/z_web_ebiz_001";
+ 
 	//User and Password of SAP 
 	Ti.API.info('authstr:'+authstr);
 //End Point
-	xhr.open('POST', url, true);
+	xhr.open('POST', soap_url, true);
 //SOAP Message
 	var soapRequest=
   	"<?xml version=\"1.0\" encoding=\"utf-8\"?>" 
@@ -79,7 +108,7 @@ function doUpdate(){
 function trySoapClient(){
 
 	var pl = new SOAPClientParameters();
-	var wsdlurl = 'http://ifecc60.ose.com.tw:8000/sap/bc/srt/wsdl/bndg_E172990212E127F1998600219B741ED8/wsdl11/allinone/ws_policy/document?sap-client=800';
+	var wsdlurl = 'http://ifecc60.ose.com.tw:8000/sap/bc/srt/wsdl/bndg_E1742FF69F1057F1998600219B741ED8/wsdl11/allinone/ws_policy/document?sap-client=800';
 	pl.add("IEbeln", 3000000005);
 	pl.add("ILifnr",5550);
 	SOAPClient.invoke(wsdlurl, authstr, "urn:ZEbiz001", pl, true, trySoapCliento_callBack);
