@@ -6,6 +6,9 @@ var username = 'demo1';
 var password = 'info5678';
 var authstr = 'Basic ' +Titanium.Utils.base64encode(username+':'+password);
 
+var selectingService = false;
+var currentService  = '';
+
 var xhr = Ti.Network.createHTTPClient();
 
 Titanium.UI.setBackgroundColor('#FFF');
@@ -15,36 +18,77 @@ var win = Titanium.UI.createWindow({
     backgroundImage: 'img/background.png'
 });
 
-var tf1 = Titanium.UI.createTextField({
-    color:'#336699',
-    height:35,
-    top:10,
-    left:10,
-    width:250,
-    borderStyle:Titanium.UI.INPUT_BORDERSTYLE_ROUNDED
+var contentView = Ti.UI.createView({
+    width: Titanium.Platform.displayCaps.platformWidth,
+    height: Titanium.Platform.displayCaps.platformHeight,
+    backgroundColor:'#fffdff',
+    top: 0,
+    left:0
 });
 
-
-
-win.add(tf1)
-
-var picker = Ti.UI.createPicker({
-  top:50
+contentView.addEventListener('click', function(e){  
+    if(selectingService){
+      	selectingService = false;
+       hidePicker();
+    }
 });
+
+win.add(contentView);
+//Service picker
+
+var picker = Ti.UI.createPicker();
 var data = [];
-data[0]=Ti.UI.createPickerRow({title:'範例 urn:ZEbiz001',wsdl:'http://ifecc60.ose.com.tw:8000/sap/bc/srt/wsdl/bndg_E172990212E127F1998600219B741ED8/wsdl11/allinone/ws_policy/document?sap-client=800'});
-data[1]=Ti.UI.createPickerRow({title:'訂單轉進貨單 n0:ZMmShipdoc',wsdl:'http://ifecc60.ose.com.tw:8000/sap/bc/srt/wsdl/bndg_E182E2A99FAFBBF1998600219B741ED8/wsdl11/allinone/ws_policy/document?sap-client=800'});
+data[0]=Ti.UI.createPickerRow({title:'please select one service'});
+data[1]=Ti.UI.createPickerRow({title:'範例 urn:ZEbiz001',wsdl:'http://ifecc60.ose.com.tw:8000/sap/bc/srt/wsdl/bndg_E172990212E127F1998600219B741ED8/wsdl11/allinone/ws_policy/document?sap-client=800'});
+data[2]=Ti.UI.createPickerRow({title:'訂單轉進貨單 n0:ZMmShipdoc',wsdl:'http://ifecc60.ose.com.tw:8000/sap/bc/srt/wsdl/bndg_E182E2A99FAFBBF1998600219B741ED8/wsdl11/allinone/ws_policy/document?sap-client=800'});
 
 picker.add(data);
 picker.selectionIndicator = true;
- 
-win.add(picker);
+if(Ti.Platform.osname == 'android'){
+	contentView.add(picker);
+}else
+{
+	win.add(picker);
+}
 
-picker.setSelectedRow(0, 2, false);
-
-tf1.addEventListener('focus',function(e){
+picker.setSelectedRow(0, 0, false);
 	
+var pickerLabel = Titanium.UI.createLabel({
+	color:'#232',
+	text:'Choose Service',
+	font:{fontSize:14,fontFamily:'Helvetica Neue', fontWeight:'bold'},
+	textAlign:'left',
+	top:10,
+	left:20,
+	width:'auto',
+	height:30
 });
+win.add(pickerLabel);
+
+var tf1 = Titanium.UI.createTextField({
+    color:'#336699',
+   	top:50,
+   	left:20,
+   	width:220,
+   	height:35,
+   	borderStyle:Titanium.UI.INPUT_BORDERSTYLE_LINE,
+    hintText: 'Press to select...'
+});
+if(Ti.Platform.osname == 'iphone'){
+	
+	tf1.addEventListener('focus',function(e){
+		selectingService = true;
+		tf1.blur();
+		picker.animate(slide_in);
+	});
+	
+	win.add(tf1);
+	picker.top = 460;
+	
+}
+
+picker.addEventListener('change',servicePickerIsChanged);
+
 //approach one
 var buttonLeft = Ti.UI.createButton({ color:'black', title:'Fixed', top:100, left:50, height:42, width:100 });
 
@@ -66,6 +110,28 @@ buttonLeft.addEventListener('click', function(e) {
 win.open();
 
 //function.....	
+//event function
+//ANIMATION VARIABLES
+var slide_in = Titanium.UI.createAnimation({
+	top:460-220
+});
+
+var slide_out = Titanium.UI.createAnimation({
+	top:460
+});
+function servicePickerIsChanged(e){
+	selectingService = false;
+	Ti.API.info('servicePickerIsChanged:'+picker.getSelectedRow(0).wsdl);
+	currentService = picker.getSelectedRow(0).wsdl;
+	tf1.value = picker.getSelectedRow(0).title;
+	//picker.top = 460- picker.height;
+	hidePicker();
+}
+function hidePicker(){
+	picker.animate(slide_out);
+}
+
+//soap function
 function soapSAP(){
 
 	var soap_url = "http://ifecc60.ose.com.tw:8000/sap/bc/srt/rfc/sap/z_web_ebiz_001/800/z_web_ebiz_001/z_web_ebiz_001";
