@@ -24,16 +24,16 @@ var tf1 = Titanium.UI.createTextField({
     borderStyle:Titanium.UI.INPUT_BORDERSTYLE_ROUNDED
 });
 
-tf1.addEventListener('focus',function(e){
-});
+
+
+win.add(tf1)
 
 var picker = Ti.UI.createPicker({
   top:50
 });
- 
 var data = [];
-data[0]=Ti.UI.createPickerRow({title:'範例 urn:ZEbiz001'});
-data[1]=Ti.UI.createPickerRow({title:'訂單轉進貨單 n0:ZMmShipdoc'});
+data[0]=Ti.UI.createPickerRow({title:'範例 urn:ZEbiz001',wsdl:'http://ifecc60.ose.com.tw:8000/sap/bc/srt/wsdl/bndg_E172990212E127F1998600219B741ED8/wsdl11/allinone/ws_policy/document?sap-client=800'});
+data[1]=Ti.UI.createPickerRow({title:'訂單轉進貨單 n0:ZMmShipdoc',wsdl:'http://ifecc60.ose.com.tw:8000/sap/bc/srt/wsdl/bndg_E182E2A99FAFBBF1998600219B741ED8/wsdl11/allinone/ws_policy/document?sap-client=800'});
 
 picker.add(data);
 picker.selectionIndicator = true;
@@ -42,6 +42,9 @@ win.add(picker);
 
 picker.setSelectedRow(0, 2, false);
 
+tf1.addEventListener('focus',function(e){
+	
+});
 //approach one
 var buttonLeft = Ti.UI.createButton({ color:'black', title:'Fixed', top:100, left:50, height:42, width:100 });
 
