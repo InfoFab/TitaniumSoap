@@ -58,7 +58,7 @@ for(var i = 0; i < services.length; i++){
 		
 		//description view for row at index i
 	var descriptionLabel = Titanium.UI.createLabel({
-		text: aService.description,
+		text: aService.functionName,
 		font : {fontSize: 10, fontWeight : ' normal ' },
 		left: 	10,
 		top: 	25,
@@ -91,7 +91,7 @@ var pickerLabel = Titanium.UI.createLabel({
 });
 win.add(pickerLabel);
 
-var buttonLeft = Ti.UI.createButton({ color:'black', title:'Load', top:120, right:50, height:42, width:100 });
+var buttonLeft = Ti.UI.createButton({ color:'black', title:'Load', top:130, right:50, height:42, width:100 });
 
 win.add(buttonLeft);
 buttonLeft.addEventListener('click', function(e) {
@@ -106,24 +106,34 @@ win.open();
 //event function
 function serviceIsSelected(e){
 	var index = e.index;
-	for (var i = 0; i < serviceTable.data.length; ++i) {
-		var rowData = serviceTable.data[i];
-	
-		if( i == index && currentServiceIndex == index ||  i != index){
-			rowData.backgroundColor = '#333';
-    		rowData.selected = false;
-  			
+	Ti.API.info('serviceIsSelected:'+index);
+	for (var i = 0; i < data.length; ++i) {
+		var rowData = data[i];
+		if( i != index){
+			deliteServiceRow(rowData);
+		}else if( i == index && currentServiceIndex == index ) {
+			deliteServiceRow(rowData);
+			currentServiceIndex = -1;
 		}else if( i == index)
 		{
-			rowData.backgroundColor = '#409EE6';
-   			rowData.selected = true;
-   			currentServiceIndex = index;
+			hiliteServiceRow(rowData);
+			currentServiceIndex = index;
 		}
     }
   	
 	Ti.API.info('currentServiceIndex:'+currentServiceIndex);
 }
+function hiliteServiceRow(rowData)
+{
+	rowData.backgroundColor = '#409EE6';
+   	rowData.selected = true;
 
+}
+function deliteServiceRow(rowData)
+{
+	rowData.backgroundColor = '#FFF';
+    rowData.selected = false;
+}
 //soap function
 function soapSAP(){
 
@@ -168,13 +178,17 @@ function doUpdate(){
 }
 
 function trySoapClient(){
-
-	var pl = new SOAPClientParameters();
-	var wsdlurl = 'http://ifecc60.ose.com.tw:8000/sap/bc/srt/wsdl/bndg_E1742FF69F1057F1998600219B741ED8/wsdl11/allinone/ws_policy/document?sap-client=800';
-	pl.add("IEbeln", 3000000005);
-	pl.add("ILifnr",5550);
-	SOAPClient.invoke(wsdlurl, authstr, "urn:ZEbiz001", pl, true, trySoapCliento_callBack);
-
+	if(currentServiceIndex >= 0){
+		var pl = new SOAPClientParameters();
+		var wsdlurl = services[currentServiceIndex].wsdl;//'http://ifecc60.ose.com.tw:8000/sap/bc/srt/wsdl/bndg_E1742FF69F1057F1998600219B741ED8/wsdl11/allinone/ws_policy/document?sap-client=800';
+		pl.add("IEbeln", 3000000005);
+		pl.add("ILifnr",5550);
+		SOAPClient.invoke(wsdlurl, authstr, "urn:ZEbiz001", pl, true, trySoapCliento_callBack);
+	
+	}else{
+		
+	}
+	
 }
 
 function trySoapCliento_callBack(r){
