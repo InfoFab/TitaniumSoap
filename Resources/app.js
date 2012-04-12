@@ -7,9 +7,12 @@ var password = 'info5678';
 var authstr = 'Basic ' +Titanium.Utils.base64encode(username+':'+password);
 
 var selectingService = false;
-var currentService  = '';
-var services = [{title:'範例',functionName:'urn:ZEbiz001', wsdl:'http://ifecc60.ose.com.tw:8000/sap/bc/srt/wsdl/bndg_E172990212E127F1998600219B741ED8/wsdl11/allinone/ws_policy/document?sap-client=800'}
-,{title:'訂單轉進貨單',functionName:'n0:ZMmShipdoc', wsdl:'http://ifecc60.ose.com.tw:8000/sap/bc/srt/wsdl/bndg_E182E2A99FAFBBF1998600219B741ED8/wsdl11/allinone/ws_policy/document?sap-client=800'}];
+var currentServiceIndex  = -1;
+var services = [];
+services[0]={title:'範例',functionName:'urn:ZEbiz001'
+	,wsdl:'http://ifecc60.ose.com.tw:8000/sap/bc/srt/wsdl/bndg_E172990212E127F1998600219B741ED8/wsdl11/allinone/ws_policy/document?sap-client=800'};
+services[1]={title:'訂單轉進貨單',functionName:'n0:ZMmShipdoc'
+	, wsdl:'http://ifecc60.ose.com.tw:8000/sap/bc/srt/wsdl/bndg_E182E2A99FAFBBF1998600219B741ED8/wsdl11/allinone/ws_policy/document?sap-client=800'};
 
 var xhr = Ti.Network.createHTTPClient();
 
@@ -37,7 +40,8 @@ for(var i = 0; i < services.length; i++){
 		className: 'recipe-row',
 		filter: aService.title,
 		height:44,
-		backgroundColor: '#fff'
+		backgroundColor: '#fff',
+		selected:false
 	});
 	//title label for row at index i
 	var titleLabel = Titanium.UI.createLabel({
@@ -54,12 +58,13 @@ for(var i = 0; i < services.length; i++){
 		
 		//description view for row at index i
 	var descriptionLabel = Titanium.UI.createLabel({
-			text: aService.description,
-			font : {fontSize: 10, fontWeight : ' normal ' },
-			left: 	70,
-			top: 	titleLabel.height+5,
-			width: 	200,
-			color:	'#9a9'
+		text: aService.description,
+		font : {fontSize: 10, fontWeight : ' normal ' },
+		left: 	10,
+		top: 	25,
+		width: 	200,
+		height: 15,
+		color:	'#9a9'
 	});
 		
 	row.add(descriptionLabel);
@@ -86,17 +91,7 @@ var pickerLabel = Titanium.UI.createLabel({
 });
 win.add(pickerLabel);
 
-
-//approach one
-var buttonLeft = Ti.UI.createButton({ color:'black', title:'Fixed', top:120, left:50, height:42, width:100 });
-
-win.add(buttonLeft);
-buttonLeft.addEventListener('click', function(e) {
-  soapSAP(); 
-});
-
-//approach two
-var buttonLeft = Ti.UI.createButton({ color:'black', title:'WSDL', top:120, right:50, height:42, width:100 });
+var buttonLeft = Ti.UI.createButton({ color:'black', title:'Load', top:120, right:50, height:42, width:100 });
 
 win.add(buttonLeft);
 buttonLeft.addEventListener('click', function(e) {
@@ -110,11 +105,24 @@ win.open();
 //function.....	
 //event function
 function serviceIsSelected(e){
-	//Ti.API.info('servicePickerIsChanged:'+picker.getSelectedRow(0).wsdl);
-	//currentService = picker.getSelectedRow(0).wsdl;
-	//picker.top = 460- picker.height
+	var index = e.index;
+	for (var i = 0; i < serviceTable.data.length; ++i) {
+		var rowData = serviceTable.data[i];
+	
+		if( i == index && currentServiceIndex == index ||  i != index){
+			rowData.backgroundColor = '#333';
+    		rowData.selected = false;
+  			
+		}else if( i == index)
+		{
+			rowData.backgroundColor = '#409EE6';
+   			rowData.selected = true;
+   			currentServiceIndex = index;
+		}
+    }
+  	
+	Ti.API.info('currentServiceIndex:'+currentServiceIndex);
 }
-
 
 //soap function
 function soapSAP(){
